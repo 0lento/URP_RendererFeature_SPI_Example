@@ -10,7 +10,7 @@ class SaturationRendererFeature : ScriptableRendererFeature
 
 	public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 	{
-		if (m_RenderPass == null)
+		if (renderingData.cameraData.cameraType != CameraType.Game || m_RenderPass == null)
 			return;
 
 		m_RenderPass.ConfigureInput(ScriptableRenderPassInput.Color);
