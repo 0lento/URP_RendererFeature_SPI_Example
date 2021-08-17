@@ -10,6 +10,12 @@ class SaturationPass : ScriptableRenderPass
 	private RenderTargetIdentifier m_CameraColorTarget;
 	private RenderTargetHandle m_SaturationTexture;
 
+	private enum ShaderPasses
+	{
+		Saturation = 0,
+		Copy = 1,
+	}
+
 	public SaturationPass(Material material)
 	{
 		m_Material = material;
@@ -30,6 +36,12 @@ class SaturationPass : ScriptableRenderPass
 		cmd.GetTemporaryRT(m_SaturationTexture.id, saturationDescriptor, FilterMode.Bilinear);
 	}
 
+	private void Render(CommandBuffer cmd, RenderTargetIdentifier target, Material material, ShaderPasses pass)
+	{
+		cmd.SetRenderTarget(target, 0, CubemapFace.Unknown, -1);
+		cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, material, 0, (int)pass);
+	}
+
 	public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
 	{
 		if (m_Material == null)
@@ -41,8 +53,10 @@ class SaturationPass : ScriptableRenderPass
 		{
 			m_Material.SetFloat("_Intensity", m_Intensity);
 
-			cmd.Blit(m_CameraColorTarget, m_SaturationTexture.Identifier(), m_Material, 0);
-			cmd.Blit(m_SaturationTexture.Identifier(), m_CameraColorTarget);
+			Render(cmd, m_SaturationTexture.Identifier(), m_Material, ShaderPasses.Saturation);
+
+			cmd.SetGlobalTexture("_CopyTexture", m_SaturationTexture.Identifier());
+			Render(cmd, m_CameraColorTarget, m_Material, ShaderPasses.Copy); 
 		}
 
 		context.ExecuteCommandBuffer(cmd);
